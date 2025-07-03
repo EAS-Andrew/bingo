@@ -25,3 +25,99 @@ body {
     text-wrap: balance;
   }
 }
+
+/* Fairy Ring Magical Effects */
+@keyframes fairy-shimmer {
+  0% {
+    box-shadow: 0 0 5px rgba(139, 92, 246, 0.3), 0 0 10px rgba(139, 92, 246, 0.2), 0 0 15px rgba(139, 92, 246, 0.1);
+  }
+
+  50% {
+    box-shadow: 0 0 10px rgba(167, 139, 250, 0.5), 0 0 20px rgba(167, 139, 250, 0.3), 0 0 30px rgba(167, 139, 250, 0.2);
+  }
+
+  100% {
+    box-shadow: 0 0 5px rgba(139, 92, 246, 0.3), 0 0 10px rgba(139, 92, 246, 0.2), 0 0 15px rgba(139, 92, 246, 0.1);
+  }
+}
+
+@keyframes sparkle-rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.fairy-ring-glow {
+  animation: fairy-shimmer 2s ease-in-out infinite;
+  position: relative;
+}
+
+.fairy-ring-glow::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg,
+      rgba(139, 92, 246, 0.2) 0%,
+      rgba(167, 139, 250, 0.3) 25%,
+      rgba(196, 181, 253, 0.2) 50%,
+      rgba(167, 139, 250, 0.3) 75%,
+      rgba(139, 92, 246, 0.2) 100%);
+  border-radius: inherit;
+  animation: sparkle-rotate 4s linear infinite;
+  z-index: -1;
+}
+
+/* Fairy Ring Magical Effects */
+@keyframes fairy-shimmer {
+  0% {
+    box-shadow: 0 0 5px rgba(139, 92, 246, 0.3), 0 0 10px rgba(139, 92, 246, 0.2), 0 0 15px rgba(139, 92, 246, 0.1);
+  }
+
+  50% {
+    box-shadow: 0 0 10px rgba(167, 139, 250, 0.5), 0 0 20px rgba(167, 139, 250, 0.3), 0 0 30px rgba(167, 139, 250, 0.2);
+  }
+
+  100% {
+    box-shadow: 0 0 5px rgba(139, 92, 246, 0.3), 0 0 10px rgba(139, 92, 246, 0.2), 0 0 15px rgba(139, 92, 246, 0.1);
+  }
+}
+
+@keyframes sparkle-rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.fairy-ring-glow {
+  animation: fairy-shimmer 2s ease-in-out infinite;
+  position: relative;
+}
+
+.fairy-ring-glow::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg,
+      rgba(139, 92, 246, 0.2) 0%,
+      rgba(167, 139, 250, 0.3) 25%,
+      rgba(196, 181, 253, 0.2) 50%,
+      rgba(167, 139, 250, 0.3) 75%,
+      rgba(139, 92, 246, 0.2) 100%);
+  border-radius: inherit;
+  animation: sparkle-rotate 4s linear infinite;
+  z-index: -1;
+}
