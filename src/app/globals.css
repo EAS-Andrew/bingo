@@ -89,35 +89,7 @@ body {
   }
 }
 
-@keyframes sparkle-rotate {
-  0% {
-    transform: rotate(0deg);
-  }
-
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
 .fairy-ring-glow {
   animation: fairy-shimmer 2s ease-in-out infinite;
   position: relative;
-}
-
-.fairy-ring-glow::before {
-  content: '';
-  position: absolute;
-  top: -2px;
-  left: -2px;
-  right: -2px;
-  bottom: -2px;
-  background: linear-gradient(45deg,
-      rgba(139, 92, 246, 0.2) 0%,
-      rgba(167, 139, 250, 0.3) 25%,
-      rgba(196, 181, 253, 0.2) 50%,
-      rgba(167, 139, 250, 0.3) 75%,
-      rgba(139, 92, 246, 0.2) 100%);
-  border-radius: inherit;
-  animation: sparkle-rotate 4s linear infinite;
-  z-index: -1;
 }

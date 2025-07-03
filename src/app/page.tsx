@@ -20,7 +20,28 @@ export default function Home() {
   const [hoveredInsertPosition, setHoveredInsertPosition] = useState<number | null>(null);
   const [hoveredTile, setHoveredTile] = useState<{ tile: BoardTile; teams: Team[]; x: number; y: number } | null>(null);
   const [highlightedDestinations, setHighlightedDestinations] = useState<number[]>([]);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [connectionMode, setConnectionMode] = useState<{ sourceId: number; type: 'snake' | 'ladder' } | null>(null);
 
+  // Mobile detection hook
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768); // md breakpoint
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Auto-disable edit mode on mobile
+  useEffect(() => {
+    if (isMobile && isEditMode) {
+      setIsEditMode(false);
+    }
+  }, [isMobile, isEditMode]);
 
   const updateTeamPosition = (teamId: string, newPosition: number) => {
     setTeams(prev => prev.map(team =>
@@ -59,8 +80,8 @@ export default function Home() {
     // Tile info
     parts.push(`#${tile.id} • ${tile.item}`);
 
-    // Task info
-    if (tile.task) {
+    // Task info (only for normal tiles)
+    if (tile.type === 'normal' && tile.task) {
       parts.push(`Task: ${tile.task}`);
     }
 
@@ -94,7 +115,32 @@ export default function Home() {
   };
 
   const handleTileClick = (tile: BoardTile, event?: React.MouseEvent) => {
-    if (isEditMode && userRole === 'leader') {
+    if (isEditMode && userRole === 'leader' && !isMobile) {
+      // Handle connection mode clicks
+      if (connectionMode) {
+        const isValidTarget = tile.type === 'normal' && tile.id !== connectionMode.sourceId && (
+          // Ladders can only go to future tiles (higher numbers)
+          connectionMode.type === 'ladder' ? tile.id > connectionMode.sourceId :
+            // Snakes can only go to previous tiles (lower numbers)  
+            connectionMode.type === 'snake' ? tile.id < connectionMode.sourceId : false
+        );
+
+        if (isValidTarget) {
+          // Valid destination - create connection
+          const updatedTile: BoardTile = {
+            ...boardData.find(t => t.id === connectionMode.sourceId)!,
+            goesTo: tile.id
+          };
+          updateBoardTileWithFairyRingUpdates(updatedTile);
+          setConnectionMode(null);
+          return;
+        } else {
+          // Invalid destination or clicking source tile - exit connection mode
+          setConnectionMode(null);
+          return;
+        }
+      }
+
       // Shift+Click = Delete tile
       if (event?.shiftKey) {
         deleteTile(tile.id);
@@ -111,11 +157,17 @@ export default function Home() {
         const updatedTile: BoardTile = {
           ...tile,
           type: newType,
-          // Clear connections when changing type
+          // Update item name and clear task for special tiles
+          item: newType !== 'normal' ? (
+            newType === 'snake' ? `Snake #${tile.id}` :
+              newType === 'ladder' ? `Ladder #${tile.id}` :
+                newType === 'fairy_ring' ? `Fairy Ring #${tile.id}` : tile.item
+          ) : tile.item,
+          task: newType === 'normal' ? tile.task : '',
           goesTo: newType === 'normal' || newType === 'fairy_ring' ? undefined : tile.goesTo,
-          fairyOptions: newType === 'fairy_ring' ? tile.fairyOptions : undefined
+          fairyOptions: undefined // Will be set automatically for fairy rings
         };
-        updateBoardTile(updatedTile);
+        updateBoardTileWithFairyRingUpdates(updatedTile);
         return;
       }
 
@@ -136,17 +188,46 @@ export default function Home() {
         return;
       }
 
-      // Regular click = Edit tile
+      // Special tile click = Enter connection mode (for snake/ladder) or edit modal (for others)
+      if (tile.type === 'snake' || tile.type === 'ladder') {
+        setConnectionMode({ sourceId: tile.id, type: tile.type });
+        return;
+      }
+
+      // Regular click = Edit tile (for normal tiles and fairy rings)
       setEditingTile(tile);
     } else {
       setSelectedTile(tile);
     }
   };
 
-  const updateBoardTile = (updatedTile: BoardTile) => {
-    setBoardData(prev => prev.map(tile =>
-      tile.id === updatedTile.id ? updatedTile : tile
-    ));
+  const updateBoardTileWithFairyRingUpdates = (updatedTile: BoardTile) => {
+    setBoardData(prev => {
+      // Update the current tile
+      const newBoardData = prev.map(tile =>
+        tile.id === updatedTile.id ? updatedTile : tile
+      );
+
+      // Auto-update all fairy rings to target each other
+      const fairyRings = newBoardData.filter(tile => tile.type === 'fairy_ring');
+      if (fairyRings.length > 0) {
+        const fairyRingIds = fairyRings.map(ring => ring.id);
+
+        return newBoardData.map(tile => {
+          if (tile.type === 'fairy_ring') {
+            // Each fairy ring targets all other fairy rings
+            const otherFairyRings = fairyRingIds.filter(id => id !== tile.id);
+            return {
+              ...tile,
+              fairyOptions: otherFairyRings.length > 0 ? otherFairyRings : undefined
+            };
+          }
+          return tile;
+        });
+      }
+
+      return newBoardData;
+    });
     setEditingTile(null);
   };
 
@@ -232,10 +313,8 @@ export default function Home() {
 
   const resetBoard = () => {
     setBoardData([]);
-    setIsEditMode(false);
+    // Don't exit edit mode when resetting - stay in edit mode
   };
-
-
 
   const exportBoard = () => {
     const dataStr = JSON.stringify(boardData, null, 2);
@@ -341,17 +420,25 @@ export default function Home() {
     }, 100);
   };
 
-
-
-
-
   const sortedTeams = [...teams].sort((a, b) => b.position - a.position);
 
   // Dynamic grid calculation based on number of tiles
   const calculateOptimalGrid = (totalTiles: number) => {
-    if (totalTiles <= 0) return { cols: 1, rows: 1 };
+    if (totalTiles <= 0) return { cols: 1, rows: 1 }; // Minimum 1x1 grid for add button
 
-    // Set reasonable bounds to prevent overflow
+    // Mobile-specific constraints
+    if (isMobile) {
+      const maxCols = 6; // Fewer columns on mobile for better touch targets
+      const minCols = 4;
+
+      // For mobile, prioritize fewer columns for larger tiles
+      const cols = Math.min(Math.max(Math.ceil(Math.sqrt(totalTiles) * 0.8), minCols), maxCols);
+      const rows = Math.ceil(totalTiles / cols);
+
+      return { cols, rows };
+    }
+
+    // Desktop constraints
     const maxCols = 20; // Maximum columns to prevent tiny tiles
     const minCols = 5;  // Minimum columns for usability
 
@@ -412,7 +499,9 @@ export default function Home() {
 
       switch (event.key) {
         case 'Escape':
-          if (editingTile) {
+          if (connectionMode) {
+            setConnectionMode(null);
+          } else if (editingTile) {
             setEditingTile(null);
           } else {
             setIsEditMode(false);
@@ -456,13 +545,13 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-neutral-900 text-neutral-100">
-      <div className="max-w-[1800px] mx-auto p-8">
+      <div className="max-w-[1800px] mx-auto p-4 md:p-8">
 
         {/* Header */}
-        <header className="border-b border-neutral-700 pb-6 mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-light tracking-tight text-neutral-100 mb-1">
+        <header className="border-b border-neutral-700 pb-4 md:pb-6 mb-4 md:mb-8">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex-1">
+              <h1 className="text-2xl md:text-3xl font-light tracking-tight text-neutral-100 mb-1">
                 OSRS Board Game
               </h1>
               <div className="text-sm text-neutral-400 font-mono">
@@ -470,7 +559,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
               <div className="text-xs text-neutral-500 font-mono uppercase tracking-wider">
                 {userRole === 'leader' ? 'Game Leader' : 'Team Member'}
                 {isEditMode && userRole === 'leader' && (
@@ -478,52 +567,91 @@ export default function Home() {
                 )}
               </div>
 
-              {userRole === 'leader' && (
-                <button
-                  onClick={() => setIsEditMode(!isEditMode)}
-                  className={`px-4 py-2 text-sm font-medium border transition-colors ${isEditMode
-                    ? 'border-orange-500 bg-orange-600 text-white hover:bg-orange-500'
-                    : 'border-neutral-600 hover:border-neutral-400 bg-neutral-800 hover:bg-neutral-700'
-                    }`}
-                >
-                  {isEditMode ? 'Exit Editor' : 'Edit Board'}
-                </button>
-              )}
+              <div className="flex gap-2">
+                {userRole === 'leader' && !isMobile && (
+                  <button
+                    onClick={() => setIsEditMode(!isEditMode)}
+                    className={`flex-1 md:flex-none px-3 md:px-4 py-2 text-sm font-medium border transition-colors ${isEditMode
+                      ? 'border-orange-500 bg-orange-600 text-white hover:bg-orange-500'
+                      : 'border-neutral-600 hover:border-neutral-400 bg-neutral-800 hover:bg-neutral-700'
+                      }`}
+                  >
+                    {isEditMode ? 'Exit Editor' : 'Edit Board'}
+                  </button>
+                )}
 
-              <button
-                onClick={() => {
-                  setUserRole(userRole === 'leader' ? 'participant' : 'leader');
-                  if (userRole === 'leader' && isEditMode) {
-                    setIsEditMode(false);
-                  }
-                }}
-                className="px-4 py-2 text-sm font-medium border border-neutral-600 hover:border-neutral-400 bg-neutral-800 hover:bg-neutral-700 transition-colors"
-              >
-                {userRole === 'leader' ? 'View as Member' : 'Leader Mode'}
-              </button>
+                <button
+                  onClick={() => {
+                    setUserRole(userRole === 'leader' ? 'participant' : 'leader');
+                    if (userRole === 'leader' && isEditMode) {
+                      setIsEditMode(false);
+                    }
+                  }}
+                  className="flex-1 md:flex-none px-3 md:px-4 py-2 text-sm font-medium border border-neutral-600 hover:border-neutral-400 bg-neutral-800 hover:bg-neutral-700 transition-colors"
+                >
+                  {userRole === 'leader' ? 'View as Member' : 'Leader Mode'}
+                </button>
+
+                {/* Mobile menu toggle */}
+                <button
+                  onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                  className="md:hidden px-3 py-2 text-sm font-medium border border-neutral-600 hover:border-neutral-400 bg-neutral-800 hover:bg-neutral-700 transition-colors"
+                >
+                  {isSidebarOpen ? 'Hide Menu' : 'Show Menu'}
+                </button>
+              </div>
             </div>
           </div>
         </header>
 
-        <div className="flex gap-8">
+        <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
 
           {/* Game Board */}
-          <div className="flex-1">
+          <div className="flex-1 order-2 lg:order-1">
             <div className="border border-neutral-700 bg-neutral-800">
-              <div className="p-6 border-b border-neutral-700">
+              <div className="p-4 md:p-6 border-b border-neutral-700">
                 <h2 className="text-lg font-medium text-neutral-100">Game Board</h2>
               </div>
 
-              <div className="p-6">
+              <div className="p-4 md:p-6">
+                {/* Connection Mode Banner */}
+                {connectionMode && (
+                  <div className="mb-4 p-3 bg-gradient-to-r from-blue-900/50 to-purple-900/50 border-2 border-blue-500 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="text-2xl">
+                        {connectionMode.type === 'snake' ? '🐍' : '🪜'}
+                      </div>
+                      <div>
+                        <div className="text-blue-200 font-medium">
+                          {connectionMode.type === 'snake' ? 'Snake' : 'Ladder'} Connection Mode
+                        </div>
+                        <div className="text-xs text-blue-300">
+                          {connectionMode.type === 'snake' ?
+                            'Click a green tile with a lower number to set destination' :
+                            'Click a green tile with a higher number to set destination'
+                          } • Press Escape to cancel
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div
-                  className="grid gap-1 bg-neutral-900 p-4 w-full max-w-4xl mx-auto"
+                  className="grid gap-1 bg-neutral-900 p-3 md:p-4 w-full max-w-4xl mx-auto"
                   style={{
                     gridTemplateColumns: `repeat(${cols}, 1fr)`,
-                    gridTemplateRows: `repeat(${rows}, 1fr)`,
-                    aspectRatio: `${cols} / ${rows}`
+                    ...(isEditMode ? {} : {
+                      gridTemplateRows: `repeat(${rows}, 1fr)`,
+                      aspectRatio: `${cols} / ${rows}`
+                    })
+                  }}
+                  onClick={(e) => {
+                    // Exit connection mode if clicking the grid background
+                    if (connectionMode && e.target === e.currentTarget) {
+                      setConnectionMode(null);
+                    }
                   }}
                 >
-
 
                   {boardData.map((tile) => {
                     const position = getSnakingPositionForGrid(tile.id, cols);
@@ -533,45 +661,69 @@ export default function Home() {
                     const isEditing = editingTile?.id === tile.id;
                     const isHovering = hoveredInsertPosition === tile.id;
                     const isHighlightedDestination = highlightedDestinations.includes(tile.id);
+                    const isConnectionSource = connectionMode?.sourceId === tile.id;
+                    const isValidConnectionTarget = connectionMode && tile.type === 'normal' && tile.id !== connectionMode.sourceId && (
+                      // Ladders can only go to future tiles (higher numbers)
+                      connectionMode.type === 'ladder' ? tile.id > connectionMode.sourceId :
+                        // Snakes can only go to previous tiles (lower numbers)
+                        connectionMode.type === 'snake' ? tile.id < connectionMode.sourceId : false
+                    );
+                    const isInvalidConnectionTarget = connectionMode && !isValidConnectionTarget && !isConnectionSource;
 
                     let tileStyle = 'bg-neutral-700 border border-neutral-600 hover:border-neutral-500 text-neutral-200';
 
-                    if (tile.type === 'snake') tileStyle = 'bg-red-900/40 border-red-700 hover:border-red-600 text-red-200';
-                    if (tile.type === 'ladder') tileStyle = 'bg-emerald-900/40 border-emerald-700 hover:border-emerald-600 text-emerald-200';
-                    if (tile.type === 'fairy_ring') tileStyle = 'bg-gradient-to-br from-violet-900/60 via-purple-800/50 to-indigo-900/60 border-violet-500 hover:border-violet-400 text-violet-100 animate-pulse fairy-ring-glow';
-                    if (isHighlightedDestination) tileStyle = 'bg-yellow-600/50 border-yellow-400 border-2 text-yellow-100 animate-pulse shadow-lg shadow-yellow-500/20';
-                    if (isSelected) tileStyle = 'bg-neutral-100 border-neutral-200 text-neutral-900';
-                    if (isEditing && isEditMode) tileStyle = 'bg-orange-600 border-orange-500 text-white';
-                    if (isEditMode && userRole === 'leader') tileStyle += ' hover:scale-105 cursor-pointer';
+                    // Connection mode overrides
+                    if (connectionMode) {
+                      if (isConnectionSource) {
+                        tileStyle = `${connectionMode.type === 'snake' ? 'bg-red-600' : 'bg-emerald-600'} border-2 border-white text-white animate-pulse shadow-lg shadow-white/30`;
+                      } else if (isValidConnectionTarget) {
+                        tileStyle = 'bg-green-600/60 border-2 border-green-400 text-green-100 hover:bg-green-500/70 cursor-pointer shadow-lg shadow-green-500/20';
+                      } else if (isInvalidConnectionTarget) {
+                        tileStyle = 'bg-neutral-800/50 border border-neutral-700 text-neutral-500 opacity-40 cursor-not-allowed';
+                      }
+                    } else {
+                      // Normal styling when not in connection mode
+                      if (tile.type === 'snake') tileStyle = 'bg-red-900/40 border-red-700 hover:border-red-600 text-red-200';
+                      if (tile.type === 'ladder') tileStyle = 'bg-emerald-900/40 border-emerald-700 hover:border-emerald-600 text-emerald-200';
+                      if (tile.type === 'fairy_ring') tileStyle = 'bg-gradient-to-br from-violet-900/60 via-purple-800/50 to-indigo-900/60 border-violet-500 hover:border-violet-400 text-violet-100 animate-pulse fairy-ring-glow';
+                      if (isHighlightedDestination) tileStyle = 'bg-yellow-600/50 border-yellow-400 border-2 text-yellow-100 animate-pulse shadow-lg shadow-yellow-500/20';
+                      if (isSelected) tileStyle = 'bg-neutral-100 border-neutral-200 text-neutral-900';
+                      if (isEditing && isEditMode && !isMobile) tileStyle = 'bg-orange-600 border-orange-500 text-white';
+                      if (isEditMode && userRole === 'leader' && !isMobile) tileStyle += ' hover:border-orange-400 cursor-pointer';
+                    }
 
                     return (
                       <button
                         key={tile.id}
-                        className={`aspect-square text-xs font-mono cursor-pointer transition-all relative group ${tileStyle} ${isMoving ? 'animate-pulse' : ''}`}
+                        className={`aspect-square text-[10px] md:text-xs font-mono cursor-pointer transition-all relative group min-h-[40px] md:min-h-[48px] ${tileStyle} ${isMoving ? 'animate-pulse' : ''}`}
                         style={{
                           gridRow: position.row + 1,
                           gridColumn: position.col + 1,
                         }}
                         onClick={(event) => handleTileClick(tile, event)}
                         onMouseEnter={(e) => {
-                          if (isEditMode && userRole === 'leader') {
+                          if (isEditMode && userRole === 'leader' && !isMobile && !connectionMode) {
                             setHoveredInsertPosition(tile.id);
                           }
-                          setHoveredTile({
-                            tile,
-                            teams: teamsHere,
-                            x: e.clientX,
-                            y: e.clientY
-                          });
 
-                          // Highlight destination tiles for special tiles
-                          const destinations = [];
-                          if (tile.type === 'snake' || tile.type === 'ladder') {
-                            if (tile.goesTo) destinations.push(tile.goesTo);
-                          } else if (tile.type === 'fairy_ring' && tile.fairyOptions) {
-                            destinations.push(...tile.fairyOptions);
+                          // Don't show tooltip during connection mode
+                          if (!connectionMode) {
+                            setHoveredTile({
+                              tile,
+                              teams: teamsHere,
+                              x: e.clientX,
+                              y: e.clientY
+                            });
+
+                            // Highlight destination tiles for special tiles
+                            const destinations = [];
+                            if (tile.type === 'snake' || tile.type === 'ladder') {
+                              if (tile.goesTo) destinations.push(tile.goesTo);
+                            } else if (tile.type === 'fairy_ring' && tile.fairyOptions) {
+                              destinations.push(...tile.fairyOptions);
+                            }
+                            setHighlightedDestinations(destinations);
                           }
-                          setHighlightedDestinations(destinations);
                         }}
                         onMouseMove={(e) => {
                           if (hoveredTile?.tile.id === tile.id) {
@@ -588,28 +740,40 @@ export default function Home() {
                           setHoveredTile(null);
                           setHighlightedDestinations([]);
                         }}
+                        onTouchStart={(e) => {
+                          // Show tile info on touch for mobile
+                          setHoveredTile({
+                            tile,
+                            teams: teamsHere,
+                            x: e.touches[0].clientX,
+                            y: e.touches[0].clientY
+                          });
+                        }}
+                        onTouchEnd={() => {
+                          setTimeout(() => setHoveredTile(null), 2000);
+                        }}
                       >
-                        <div className="absolute top-1 left-1 text-[10px] font-bold opacity-60">
+                        <div className="absolute top-0.5 md:top-1 left-0.5 md:left-1 text-[8px] md:text-[10px] font-bold opacity-60">
                           {tile.id}
                         </div>
 
                         {tile.type === 'snake' && (
-                          <div className="absolute bottom-1 right-1 text-red-400 text-xs">
+                          <div className="absolute bottom-0.5 md:bottom-1 right-0.5 md:right-1 text-red-400 text-[10px] md:text-xs">
                             🐍{tile.goesTo || '?'}
                           </div>
                         )}
                         {tile.type === 'ladder' && (
-                          <div className="absolute bottom-1 right-1 text-emerald-400 text-xs">
+                          <div className="absolute bottom-0.5 md:bottom-1 right-0.5 md:right-1 text-emerald-400 text-[10px] md:text-xs">
                             🪜{tile.goesTo || '?'}
                           </div>
                         )}
                         {tile.type === 'fairy_ring' && (
-                          <div className="absolute bottom-1 right-1 text-violet-400 text-xs">
+                          <div className="absolute bottom-0.5 md:bottom-1 right-0.5 md:right-1 text-violet-400 text-[10px] md:text-xs">
                             ✦{tile.fairyOptions ? tile.fairyOptions.join(',') : '?'}
                           </div>
                         )}
 
-                        {isEditMode && userRole === 'leader' && (
+                        {isEditMode && userRole === 'leader' && !isMobile && !connectionMode && (
                           <div className={`absolute inset-0 opacity-0 hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-center ${heldKeys.shift ? 'bg-red-500/30' :
                             heldKeys.ctrl ? 'bg-blue-500/30' :
                               heldKeys.alt ? 'bg-green-500/30' :
@@ -639,24 +803,24 @@ export default function Home() {
 
                         {/* Team markers */}
                         {teamsHere.length > 0 && !isEditMode && (
-                          <div className="absolute top-1 right-1 flex gap-0.5">
+                          <div className="absolute top-0.5 md:top-1 right-0.5 md:right-1 flex gap-0.5">
                             {teamsHere.slice(0, 4).map(team => (
                               <div
                                 key={team.id}
-                                className="w-2 h-2 border border-neutral-800"
+                                className="w-1.5 h-1.5 md:w-2 md:h-2 border border-neutral-800"
                                 style={{ backgroundColor: team.color }}
                               />
                             ))}
                             {teamsHere.length > 4 && (
-                              <div className="w-2 h-2 border border-neutral-800 bg-neutral-600 flex items-center justify-center">
-                                <span className="text-[6px] text-white font-bold">+{teamsHere.length - 4}</span>
+                              <div className="w-1.5 h-1.5 md:w-2 md:h-2 border border-neutral-800 bg-neutral-600 flex items-center justify-center">
+                                <span className="text-[5px] md:text-[6px] text-white font-bold">+{teamsHere.length - 4}</span>
                               </div>
                             )}
                           </div>
                         )}
 
                         {/* Insert buttons when hovering */}
-                        {isEditMode && userRole === 'leader' && isHovering && (() => {
+                        {isEditMode && userRole === 'leader' && !isMobile && isHovering && (() => {
                           const currentIndex = boardData.findIndex(t => t.id === tile.id);
                           const row = Math.floor((tile.id - 1) / cols);
                           const isLeftToRight = row % 2 === 0;
@@ -695,7 +859,27 @@ export default function Home() {
                   })}
 
                   {/* Add new tile button */}
-                  {isEditMode && userRole === 'leader' && (() => {
+                  {isEditMode && userRole === 'leader' && !isMobile && (() => {
+                    if (boardData.length === 0) {
+                      // Special case for empty board - show add button in center
+                      return (
+                        <button
+                          className="aspect-square text-lg font-mono cursor-pointer transition-all relative bg-neutral-800/50 border-2 border-dashed border-green-600 hover:border-green-500 hover:bg-green-900/20 text-green-500 hover:text-green-300 min-h-[120px]"
+                          style={{
+                            gridRow: 1,
+                            gridColumn: 1,
+                          }}
+                          onClick={() => addNewTile()}
+                          title="Add first tile to start building your board"
+                        >
+                          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+                            <span className="text-4xl font-bold">+</span>
+                            <span className="text-xs text-neutral-400">Add First Tile</span>
+                          </div>
+                        </button>
+                      );
+                    }
+
                     const nextTileId = boardData.length + 1;
                     const nextPosition = getSnakingPositionForGrid(nextTileId, cols);
 
@@ -724,12 +908,13 @@ export default function Home() {
           </div>
 
           {/* Sidebar */}
-          <div className="w-80 space-y-6">
+          <div className={`w-full lg:w-80 space-y-4 lg:space-y-6 order-1 lg:order-2 ${isSidebarOpen ? 'block' : 'hidden lg:block'
+            }`}>
 
             {userRole === 'leader' ? (
               // LEADER CONTROLS
               <>
-                {isEditMode && (
+                {isEditMode && !isMobile && (
                   /* Board Editor Controls */
                   <div className="border border-orange-600 bg-orange-900/20">
                     <div className="p-4 border-b border-orange-600">
@@ -740,13 +925,13 @@ export default function Home() {
                         <div className="grid grid-cols-2 gap-2">
                           <button
                             onClick={importBoard}
-                            className="p-2 text-xs border border-blue-600 hover:border-blue-500 text-blue-300 hover:text-blue-200 transition-colors"
+                            className="p-3 md:p-2 text-sm md:text-xs border border-blue-600 hover:border-blue-500 text-blue-300 hover:text-blue-200 transition-colors"
                           >
                             Import
                           </button>
                           <button
                             onClick={exportBoard}
-                            className="p-2 text-xs border border-neutral-600 hover:border-neutral-400 text-neutral-300 hover:text-neutral-100 transition-colors"
+                            className="p-3 md:p-2 text-sm md:text-xs border border-neutral-600 hover:border-neutral-400 text-neutral-300 hover:text-neutral-100 transition-colors"
                           >
                             Export
                           </button>
@@ -754,14 +939,24 @@ export default function Home() {
 
                         <button
                           onClick={resetBoard}
-                          className="w-full p-2 text-xs border border-red-600 hover:border-red-500 text-red-300 hover:text-red-200 transition-colors"
+                          className="w-full p-3 md:p-2 text-sm md:text-xs border border-red-600 hover:border-red-500 text-red-300 hover:text-red-200 transition-colors"
                         >
                           Reset Board
                         </button>
 
                         <div className="text-xs text-neutral-400 space-y-1">
-                          <p>• Click tiles to edit • + tile to add</p>
-                          <p>• Shift+Click to delete • Ctrl+Click to cycle type</p>
+                          {boardData.length === 0 ? (
+                            <>
+                              <p className="text-green-400">• Click the + button to add your first tile</p>
+                              <p>• Build your custom board from there</p>
+                            </>
+                          ) : (
+                            <>
+                              <p>• Click tiles to edit • + tile to add</p>
+                              <p>• Click 🐍/🪜 tiles to set destination (🐍→lower, 🪜→higher)</p>
+                              <p>• Shift+Click to delete • Ctrl+Click to cycle type</p>
+                            </>
+                          )}
                           <p className="text-orange-400">{boardData.length} tiles</p>
                         </div>
                       </div>
@@ -776,7 +971,7 @@ export default function Home() {
                       <h3 className="font-medium text-neutral-100">Team Management</h3>
                       <button
                         onClick={addTeam}
-                        className="text-xs px-2 py-1 border border-green-600 hover:border-green-500 text-green-300 hover:text-green-200 transition-colors"
+                        className="text-sm md:text-xs px-3 md:px-2 py-2 md:py-1 border border-green-600 hover:border-green-500 text-green-300 hover:text-green-200 transition-colors"
                       >
                         Add Team
                       </button>
@@ -840,10 +1035,10 @@ export default function Home() {
                   </div>
                   <div className="p-4">
                     <div className="text-center mb-6">
-                      <div className="w-20 h-20 border-2 border-neutral-500 bg-neutral-900 mx-auto flex items-center justify-center text-3xl font-bold font-mono mb-3 transition-all">
+                      <div className="w-16 h-16 md:w-20 md:h-20 border-2 border-neutral-500 bg-neutral-900 mx-auto flex items-center justify-center text-2xl md:text-3xl font-bold font-mono mb-3 transition-all">
                         {diceRoll || '?'}
                       </div>
-                      <div className="text-xs text-neutral-400 font-mono uppercase tracking-wider mb-4">
+                      <div className="text-xs md:text-sm text-neutral-400 font-mono uppercase tracking-wider mb-4">
                         {isRolling ? 'Rolling dice...' : movingTeam ? `Moving ${teams.find(t => t.id === movingTeam)?.name}` : 'Ready to roll'}
                       </div>
 
@@ -858,7 +1053,7 @@ export default function Home() {
                           }
                         }}
                         disabled={isRolling || movingTeam !== null}
-                        className={`w-full mb-4 p-2 text-xs font-mono border transition-all ${isRolling || movingTeam !== null
+                        className={`w-full mb-4 p-3 md:p-2 text-sm md:text-xs font-mono border transition-all ${isRolling || movingTeam !== null
                           ? 'border-neutral-700 text-neutral-600 cursor-not-allowed bg-neutral-800'
                           : 'border-neutral-500 hover:border-neutral-300 text-neutral-300 hover:text-neutral-100 bg-neutral-700 hover:bg-neutral-600'
                           }`}
@@ -883,7 +1078,7 @@ export default function Home() {
                             <button
                               onClick={() => rollForTeam(team.id)}
                               disabled={isRolling || movingTeam !== null}
-                              className={`flex-1 p-2 text-xs font-mono border transition-all ${movingTeam === team.id
+                              className={`flex-1 p-3 md:p-2 text-sm md:text-xs font-mono border transition-all ${movingTeam === team.id
                                 ? 'border-yellow-500 text-yellow-300 bg-yellow-900/20'
                                 : isRolling || movingTeam !== null
                                   ? 'border-neutral-700 text-neutral-600 cursor-not-allowed'
@@ -988,8 +1183,6 @@ export default function Home() {
                           <span className="text-sm font-medium text-neutral-200">{team.name}</span>
                           <span className="ml-auto text-xs font-mono text-neutral-400">{team.position}</span>
                         </div>
-
-
 
                         <div className="flex gap-2 text-xs">
                           <button
@@ -1117,8 +1310,8 @@ export default function Home() {
 
         {/* Tile Editor Modal */}
         {editingTile && isEditMode && userRole === 'leader' && (
-          <div className="fixed inset-0 bg-neutral-900/90 backdrop-blur-sm flex items-center justify-center p-8 z-50">
-            <div className="bg-neutral-800 border border-orange-600 max-w-lg w-full max-h-[80vh] overflow-y-auto">
+          <div className="fixed inset-0 bg-neutral-900/90 backdrop-blur-sm flex items-center justify-center p-4 md:p-8 z-50">
+            <div className="bg-neutral-800 border border-orange-600 max-w-lg w-full max-h-[90vh] md:max-h-[80vh] overflow-y-auto">
               <div className="p-6 border-b border-orange-600">
                 <div className="flex items-center justify-between">
                   <div>
@@ -1142,17 +1335,31 @@ export default function Home() {
                 <form onSubmit={(e) => {
                   e.preventDefault();
                   const formData = new FormData(e.target as HTMLFormElement);
+                  const newType = formData.get('type') as 'normal' | 'snake' | 'ladder' | 'fairy_ring';
+
+                  // Validate snake/ladder destinations are not special tiles
+                  let goesTo: number | undefined = undefined;
+                  if ((newType === 'snake' || newType === 'ladder') && formData.get('goesTo')) {
+                    const destinationId = parseInt(formData.get('goesTo') as string);
+                    const destinationTile = boardData.find(t => t.id === destinationId);
+
+                    if (destinationTile && destinationTile.type !== 'normal') {
+                      alert(`${newType === 'snake' ? 'Snake' : 'Ladder'} destinations must be normal tiles, not special tiles.`);
+                      return;
+                    }
+                    goesTo = destinationId;
+                  }
+
                   const updatedTile: BoardTile = {
                     ...editingTile,
                     item: formData.get('item') as string,
-                    task: formData.get('task') as string,
-                    type: formData.get('type') as 'normal' | 'snake' | 'ladder' | 'fairy_ring',
-                    goesTo: formData.get('goesTo') ? parseInt(formData.get('goesTo') as string) : undefined,
-                    fairyOptions: formData.get('fairyOptions')
-                      ? (formData.get('fairyOptions') as string).split(',').map(n => parseInt(n.trim())).filter(n => !isNaN(n))
-                      : undefined
+                    task: newType === 'normal' ? (formData.get('task') as string) : '', // Only normal tiles have tasks
+                    type: newType,
+                    goesTo,
+                    fairyOptions: undefined // Will be set automatically for fairy rings
                   };
-                  updateBoardTile(updatedTile);
+
+                  updateBoardTileWithFairyRingUpdates(updatedTile);
                 }}>
                   <div className="space-y-4">
                     <div>
@@ -1166,16 +1373,18 @@ export default function Home() {
                       />
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-neutral-200 mb-2">Task Description</label>
-                      <textarea
-                        name="task"
-                        defaultValue={editingTile.task}
-                        rows={3}
-                        className="w-full p-3 bg-neutral-700 border border-neutral-600 text-neutral-200 rounded focus:border-orange-500 focus:outline-none"
-                        required
-                      />
-                    </div>
+                    {editingTile.type === 'normal' && (
+                      <div>
+                        <label className="block text-sm font-medium text-neutral-200 mb-2">Task Description</label>
+                        <textarea
+                          name="task"
+                          defaultValue={editingTile.task}
+                          rows={3}
+                          className="w-full p-3 bg-neutral-700 border border-neutral-600 text-neutral-200 rounded focus:border-orange-500 focus:outline-none"
+                          required
+                        />
+                      </div>
+                    )}
 
                     <div>
                       <label className="block text-sm font-medium text-neutral-200 mb-2">Tile Type</label>
@@ -1192,41 +1401,59 @@ export default function Home() {
                     </div>
 
                     {(editingTile.type === 'snake' || editingTile.type === 'ladder') && (
-                      <div>
-                        <label className="block text-sm font-medium text-neutral-200 mb-2">
-                          {editingTile.type === 'snake' ? 'Snake destination tile' : 'Ladder destination tile'}
-                        </label>
-                        <input
-                          name="goesTo"
-                          type="number"
-                          defaultValue={editingTile.goesTo || ''}
-                          min="1"
-                          max={boardData.length}
-                          className="w-full p-3 bg-neutral-700 border border-neutral-600 text-neutral-200 rounded focus:border-orange-500 focus:outline-none"
-                        />
-                        <div className="text-xs text-neutral-400 mt-1">
-                          Enter tile number (1-{boardData.length})
+                      <div className="p-3 bg-blue-900/20 border border-blue-600 rounded">
+                        <div className="text-sm text-blue-200 mb-2">
+                          {editingTile.type === 'snake' ? '🐍 Snake' : '🪜 Ladder'} Connection
+                        </div>
+                        {editingTile.goesTo ? (
+                          <div className="text-xs text-neutral-300">
+                            Currently connects to tile #{editingTile.goesTo}
+                          </div>
+                        ) : (
+                          <div className="text-xs text-neutral-400 italic">
+                            No destination set yet
+                          </div>
+                        )}
+                        <div className="text-xs text-blue-300 mt-2">
+                          💡 Close this dialog and click the {editingTile.type === 'snake' ? 'snake' : 'ladder'} tile to set its destination visually
                         </div>
                       </div>
                     )}
 
-                    {editingTile.type === 'fairy_ring' && (
-                      <div>
-                        <label className="block text-sm font-medium text-neutral-200 mb-2">
-                          Fairy ring destinations (comma-separated tile numbers)
-                        </label>
-                        <input
-                          name="fairyOptions"
-                          type="text"
-                          defaultValue={editingTile.fairyOptions?.join(', ') || ''}
-                          placeholder="e.g. 15, 42, 73"
-                          className="w-full p-3 bg-neutral-700 border border-neutral-600 text-neutral-200 rounded focus:border-orange-500 focus:outline-none"
-                        />
-                        <div className="text-xs text-neutral-400 mt-1">
-                          Enter 3 tile numbers (1-{boardData.length}) separated by commas
+                    {editingTile.type === 'fairy_ring' && (() => {
+                      const otherFairyRings = boardData.filter(tile =>
+                        tile.type === 'fairy_ring' && tile.id !== editingTile.id
+                      );
+
+                      return (
+                        <div>
+                          <label className="block text-sm font-medium text-neutral-200 mb-2">
+                            Fairy Ring Auto-Targeting
+                          </label>
+                          <div className="p-3 bg-violet-900/20 border border-violet-600 rounded">
+                            <div className="text-sm text-violet-200 mb-2">
+                              ✦ This fairy ring will automatically target all other fairy rings:
+                            </div>
+                            {otherFairyRings.length > 0 ? (
+                              <div className="space-y-1">
+                                {otherFairyRings.map(ring => (
+                                  <div key={ring.id} className="text-xs text-neutral-300">
+                                    #{ring.id} - {ring.item}
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="text-xs text-neutral-400 italic">
+                                No other fairy rings found. Create more fairy rings to enable teleportation.
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-xs text-neutral-400 mt-1">
+                            Fairy rings automatically connect to each other for balanced gameplay
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
 
                     <div className="flex gap-3 pt-4 border-t border-neutral-700">
                       <button
@@ -1257,8 +1484,8 @@ export default function Home() {
 
         {/* Tile Detail Modal */}
         {selectedTile && !isEditMode && (
-          <div className="fixed inset-0 bg-neutral-900/80 backdrop-blur-sm flex items-center justify-center p-8 z-50">
-            <div className="bg-neutral-800 border border-neutral-600 max-w-lg w-full max-h-[80vh] overflow-y-auto">
+          <div className="fixed inset-0 bg-neutral-900/80 backdrop-blur-sm flex items-center justify-center p-4 md:p-8 z-50">
+            <div className="bg-neutral-800 border border-neutral-600 max-w-lg w-full max-h-[90vh] md:max-h-[80vh] overflow-y-auto">
               <div className="p-6 border-b border-neutral-700">
                 <div className="flex items-center justify-between">
                   <div>
@@ -1342,22 +1569,22 @@ export default function Home() {
         {/* Custom Tooltip */}
         {hoveredTile && (
           <div
-            className="fixed pointer-events-none bg-neutral-900 border border-neutral-600 text-neutral-200 text-xs p-3 rounded shadow-lg max-w-xs z-50"
+            className="fixed pointer-events-none bg-neutral-900 border border-neutral-600 text-neutral-200 text-xs md:text-sm p-3 rounded shadow-lg max-w-xs md:max-w-sm z-50"
             style={{
-              left: Math.min(
+              left: typeof window !== 'undefined' ? Math.min(
                 hoveredTile.x + 10,
-                window.innerWidth - 320 // tooltip width + margin
-              ),
-              top: Math.max(
+                window.innerWidth - 280 // tooltip width + margin
+              ) : hoveredTile.x + 10,
+              top: typeof window !== 'undefined' ? Math.max(
                 10,
                 Math.min(
                   hoveredTile.y + 10,
                   window.innerHeight - 200 // estimated tooltip height + margin
                 )
-              ),
+              ) : hoveredTile.y + 10,
             }}
           >
-            <div className="whitespace-pre-line font-mono">
+            <div className="whitespace-pre-line font-mono text-xs md:text-sm">
               {getTileHoverInfo(hoveredTile.tile, hoveredTile.teams)}
             </div>
           </div>

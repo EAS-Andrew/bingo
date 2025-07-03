@@ -1,0 +1,623 @@
+[
+    {
+        "id": 1,
+        "item": "Lumby",
+        "task": "Start your journey in Lumbridge",
+        "type": "normal"
+    },
+    {
+        "id": 2,
+        "item": "Black Mask",
+        "task": "Obtain Black Mask from cave horrors",
+        "type": "normal"
+    },
+    {
+        "id": 3,
+        "item": "Any Barrows",
+        "task": "Get any barrows weapon/armor",
+        "type": "normal"
+    },
+    {
+        "id": 4,
+        "item": "3 Scimitars",
+        "task": "Collect 3 different scimitars",
+        "type": "normal"
+    },
+    {
+        "id": 5,
+        "item": "Glacial Temper",
+        "task": "Complete Fremennik quest",
+        "type": "normal"
+    },
+    {
+        "id": 6,
+        "item": "Ladder",
+        "task": "Climb up!",
+        "type": "ladder",
+        "goesTo": 25
+    },
+    {
+        "id": 7,
+        "item": "10 Hit Magic",
+        "task": "Deal 10+ damage with magic",
+        "type": "normal"
+    },
+    {
+        "id": 8,
+        "item": "Long Bone",
+        "task": "Obtain a long bone drop",
+        "type": "normal"
+    },
+    {
+        "id": 9,
+        "item": "Back to Lumby",
+        "task": "Die and respawn in Lumbridge",
+        "type": "normal"
+    },
+    {
+        "id": 10,
+        "item": "Crazy Ahrim's Staff",
+        "task": "Get Crazy Ahrim's Staff",
+        "type": "normal"
+    },
+    {
+        "id": 11,
+        "item": "TzHaar Unique",
+        "task": "Get any TzHaar unique",
+        "type": "normal"
+    },
+    {
+        "id": 12,
+        "item": "Boot Head Drop Any Boss",
+        "task": "Get boot head drop from any boss",
+        "type": "normal"
+    },
+    {
+        "id": 13,
+        "item": "R Drag or Dragon Outfit",
+        "task": "Get R drag or dragon outfit",
+        "type": "normal"
+    },
+    {
+        "id": 14,
+        "item": "Sanguinesti Staff",
+        "task": "Get sanguinesti staff",
+        "type": "normal"
+    },
+    {
+        "id": 15,
+        "item": "Vorkath or Dragonbone",
+        "task": "Get Vorkath or dragonbone",
+        "type": "normal"
+    },
+    {
+        "id": 16,
+        "item": "Spirit Seed Drop",
+        "task": "Get spirit seed drop",
+        "type": "normal"
+    },
+    {
+        "id": 17,
+        "item": "Snake",
+        "task": "Slide down!",
+        "type": "snake",
+        "goesTo": 6
+    },
+    {
+        "id": 18,
+        "item": "Saradomin",
+        "task": "Get Saradomin item",
+        "type": "normal"
+    },
+    {
+        "id": 19,
+        "item": "Bounty Hunter",
+        "task": "Get bounty hunter kill",
+        "type": "normal"
+    },
+    {
+        "id": 20,
+        "item": "Elder Chaos",
+        "task": "Cut elder logs in wilderness",
+        "type": "normal"
+    },
+    {
+        "id": 21,
+        "item": "Ballista Drop",
+        "task": "Get ballista drop",
+        "type": "normal"
+    },
+    {
+        "id": 22,
+        "item": "Ancestral Whip",
+        "task": "Get ancestral whip",
+        "type": "normal"
+    },
+    {
+        "id": 23,
+        "item": "Lite Win",
+        "task": "Win lite",
+        "type": "normal"
+    },
+    {
+        "id": 24,
+        "item": "Runescarved Unique",
+        "task": "Get runescarved unique",
+        "type": "normal"
+    },
+    {
+        "id": 25,
+        "item": "Fairy Ring",
+        "task": "Random teleport!",
+        "type": "fairy_ring",
+        "fairyOptions": [
+            15,
+            35,
+            72
+        ]
+    },
+    {
+        "id": 26,
+        "item": "3 Barrows",
+        "task": "Get 3 barrows items",
+        "type": "normal"
+    },
+    {
+        "id": 27,
+        "item": "Warrior Unique",
+        "task": "Get warrior unique",
+        "type": "normal"
+    },
+    {
+        "id": 28,
+        "item": "Unique from Every Kourend Boss",
+        "task": "Get unique from every Kourend boss",
+        "type": "normal"
+    },
+    {
+        "id": 29,
+        "item": "Snake",
+        "task": "Slide down!",
+        "type": "snake",
+        "goesTo": 17
+    },
+    {
+        "id": 30,
+        "item": "Slayer Boss Unique",
+        "task": "Get slayer boss unique",
+        "type": "normal"
+    },
+    {
+        "id": 31,
+        "item": "3 Master Combat Achievements",
+        "task": "Complete 3 master combat achievements",
+        "type": "normal"
+    },
+    {
+        "id": 32,
+        "item": "50 Sarachnis Cudgel",
+        "task": "Get 50 Sarachnis cudgels",
+        "type": "normal"
+    },
+    {
+        "id": 33,
+        "item": "Venomous or Chronicle Unique",
+        "task": "Get venomous or chronicle unique",
+        "type": "normal"
+    },
+    {
+        "id": 34,
+        "item": "Abyssal Boots",
+        "task": "Get abyssal boots",
+        "type": "normal"
+    },
+    {
+        "id": 35,
+        "item": "Fairy Ring",
+        "task": "Random teleport!",
+        "type": "fairy_ring",
+        "fairyOptions": [
+            25,
+            45,
+            80
+        ]
+    },
+    {
+        "id": 36,
+        "item": "3 Barrows Sets",
+        "task": "Complete 3 barrows sets",
+        "type": "normal"
+    },
+    {
+        "id": 37,
+        "item": "Unique from Every Kourend Boss",
+        "task": "Get unique from every Kourend boss",
+        "type": "normal"
+    },
+    {
+        "id": 38,
+        "item": "Nex Armadyl Crossbow",
+        "task": "Get Nex Armadyl crossbow",
+        "type": "normal"
+    },
+    {
+        "id": 39,
+        "item": "Kree Arra Boss Jars",
+        "task": "Get Kree'arra boss jars",
+        "type": "normal"
+    },
+    {
+        "id": 40,
+        "item": "Ladder",
+        "task": "Climb up!",
+        "type": "ladder",
+        "goesTo": 65
+    },
+    {
+        "id": 41,
+        "item": "Zulkan Unique",
+        "task": "Get Zulkan unique",
+        "type": "normal"
+    },
+    {
+        "id": 42,
+        "item": "Snake",
+        "task": "Slide down!",
+        "type": "snake",
+        "goesTo": 25
+    },
+    {
+        "id": 43,
+        "item": "Strange or Ancient Page",
+        "task": "Get strange or ancient page",
+        "type": "normal"
+    },
+    {
+        "id": 44,
+        "item": "Godsword Piece",
+        "task": "Get godsword piece",
+        "type": "normal"
+    },
+    {
+        "id": 45,
+        "item": "Enhanced Teleport Seed",
+        "task": "Get enhanced teleport seed",
+        "type": "normal"
+    },
+    {
+        "id": 46,
+        "item": "Complete A Master Quest",
+        "task": "Complete a master quest",
+        "type": "normal"
+    },
+    {
+        "id": 47,
+        "item": "Every CA Ring",
+        "task": "Get every combat achievement ring",
+        "type": "normal"
+    },
+    {
+        "id": 48,
+        "item": "Clue from Barb Fishing",
+        "task": "Get clue from barbarian fishing",
+        "type": "normal"
+    },
+    {
+        "id": 49,
+        "item": "5 Grandmaster Quest Achievements",
+        "task": "Complete 5 grandmaster quest achievements",
+        "type": "normal"
+    },
+    {
+        "id": 50,
+        "item": "Mahram Unique",
+        "task": "Defeat Mahram",
+        "type": "normal"
+    },
+    {
+        "id": 51,
+        "item": "Boss Jars",
+        "task": "Collect boss jars",
+        "type": "normal"
+    },
+    {
+        "id": 52,
+        "item": "Zulrah Unique",
+        "task": "Get another Zulrah unique",
+        "type": "normal"
+    },
+    {
+        "id": 53,
+        "item": "Ladder",
+        "task": "Climb up!",
+        "type": "ladder",
+        "goesTo": 55
+    },
+    {
+        "id": 54,
+        "item": "Blood Shard",
+        "task": "Obtain blood shard",
+        "type": "normal"
+    },
+    {
+        "id": 55,
+        "item": "Aerial Boss Unique",
+        "task": "Get aerial boss unique",
+        "type": "normal"
+    },
+    {
+        "id": 56,
+        "item": "Spider Boss Unique",
+        "task": "Kill spider boss",
+        "type": "normal"
+    },
+    {
+        "id": 57,
+        "item": "Vorkath Unique",
+        "task": "Get Vorkath unique",
+        "type": "normal"
+    },
+    {
+        "id": 58,
+        "item": "Collection Log Unique",
+        "task": "Get collection log unique",
+        "type": "normal"
+    },
+    {
+        "id": 59,
+        "item": "Zulrah Unique",
+        "task": "Get Zulrah unique",
+        "type": "normal"
+    },
+    {
+        "id": 60,
+        "item": "Snake",
+        "task": "Slide down!",
+        "type": "snake",
+        "goesTo": 40
+    },
+    {
+        "id": 61,
+        "item": "Ladder",
+        "task": "Climb up!",
+        "type": "ladder",
+        "goesTo": 47
+    },
+    {
+        "id": 62,
+        "item": "Private Server",
+        "task": "Join private server",
+        "type": "normal"
+    },
+    {
+        "id": 63,
+        "item": "Gauntlet Seed",
+        "task": "Get gauntlet seed",
+        "type": "normal"
+    },
+    {
+        "id": 64,
+        "item": "UTS Boss Challenge",
+        "task": "Complete UTS boss challenge",
+        "type": "normal"
+    },
+    {
+        "id": 65,
+        "item": "TOA Unique",
+        "task": "Get another ToA unique",
+        "type": "normal"
+    },
+    {
+        "id": 66,
+        "item": "TOA Unique",
+        "task": "Get ToA unique",
+        "type": "normal"
+    },
+    {
+        "id": 67,
+        "item": "Nightmare Unique",
+        "task": "Get Nightmare unique",
+        "type": "normal"
+    },
+    {
+        "id": 68,
+        "item": "Avernic Piece",
+        "task": "Get Avernic defender",
+        "type": "normal"
+    },
+    {
+        "id": 69,
+        "item": "Masori Piece",
+        "task": "Get Masori armor",
+        "type": "normal"
+    },
+    {
+        "id": 70,
+        "item": "Nex Unique",
+        "task": "Defeat Nex",
+        "type": "normal"
+    },
+    {
+        "id": 71,
+        "item": "Snake",
+        "task": "Slide down!",
+        "type": "snake",
+        "goesTo": 60
+    },
+    {
+        "id": 72,
+        "item": "Champion Scroll",
+        "task": "Get champion scroll",
+        "type": "normal"
+    },
+    {
+        "id": 73,
+        "item": "Comp Beast Mode",
+        "task": "Complete beast mode",
+        "type": "normal"
+    },
+    {
+        "id": 74,
+        "item": "Any 3rd Drop",
+        "task": "Get any third age drop",
+        "type": "normal"
+    },
+    {
+        "id": 75,
+        "item": "CoX Unique",
+        "task": "Get CoX unique",
+        "type": "normal"
+    },
+    {
+        "id": 76,
+        "item": "Lumby Ring",
+        "task": "Complete Lumbridge diary task",
+        "type": "normal"
+    },
+    {
+        "id": 77,
+        "item": "TzHaar Unique",
+        "task": "Get any TzHaar unique",
+        "type": "normal"
+    },
+    {
+        "id": 78,
+        "item": "Any Barrows",
+        "task": "Get any barrows weapon/armor",
+        "type": "normal"
+    },
+    {
+        "id": 79,
+        "item": "3 Scimitars",
+        "task": "Collect 3 different scimitars",
+        "type": "normal"
+    },
+    {
+        "id": 80,
+        "item": "Comp Beast Mode",
+        "task": "Complete beast mode",
+        "type": "normal"
+    },
+    {
+        "id": 81,
+        "item": "Any 3rd Drop",
+        "task": "Get any third age drop",
+        "type": "normal"
+    },
+    {
+        "id": 82,
+        "item": "Champion Scroll",
+        "task": "Get champion scroll",
+        "type": "normal"
+    },
+    {
+        "id": 83,
+        "item": "Snake",
+        "task": "Slide down!",
+        "type": "snake",
+        "goesTo": 71
+    },
+    {
+        "id": 84,
+        "item": "Nex Unique",
+        "task": "Defeat Nex",
+        "type": "normal"
+    },
+    {
+        "id": 85,
+        "item": "Masori Piece",
+        "task": "Get Masori armor",
+        "type": "normal"
+    },
+    {
+        "id": 86,
+        "item": "Avernic Piece",
+        "task": "Get Avernic defender",
+        "type": "normal"
+    },
+    {
+        "id": 87,
+        "item": "Nightmare Unique",
+        "task": "Get Nightmare unique",
+        "type": "normal"
+    },
+    {
+        "id": 88,
+        "item": "TOA Unique",
+        "task": "Get ToA unique",
+        "type": "normal"
+    },
+    {
+        "id": 89,
+        "item": "CoX Unique",
+        "task": "Get CoX unique",
+        "type": "normal"
+    },
+    {
+        "id": 90,
+        "item": "Any 3rd Drop",
+        "task": "Get any third age drop",
+        "type": "normal"
+    },
+    {
+        "id": 91,
+        "item": "Comp Beast Mode",
+        "task": "Complete beast mode",
+        "type": "normal"
+    },
+    {
+        "id": 92,
+        "item": "Champion Scroll",
+        "task": "Get champion scroll",
+        "type": "normal"
+    },
+    {
+        "id": 93,
+        "item": "Snake",
+        "task": "Slide down!",
+        "type": "snake",
+        "goesTo": 83
+    },
+    {
+        "id": 94,
+        "item": "Nex Unique",
+        "task": "Defeat Nex",
+        "type": "normal"
+    },
+    {
+        "id": 95,
+        "item": "Masori Piece",
+        "task": "Get Masori armor",
+        "type": "normal"
+    },
+    {
+        "id": 96,
+        "item": "Avernic Piece",
+        "task": "Get Avernic defender",
+        "type": "normal"
+    },
+    {
+        "id": 97,
+        "item": "Nightmare Unique",
+        "task": "Get Nightmare unique",
+        "type": "normal"
+    },
+    {
+        "id": 98,
+        "item": "TOA Unique",
+        "task": "Get another ToA unique",
+        "type": "normal"
+    },
+    {
+        "id": 99,
+        "item": "TOA Unique",
+        "task": "Get ToA unique",
+        "type": "normal"
+    },
+    {
+        "id": 100,
+        "item": "Obtain A 100m Drop",
+        "task": "Get a drop worth 100m or more",
+        "type": "normal"
+    }
+]
