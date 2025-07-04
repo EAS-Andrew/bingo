@@ -377,12 +377,21 @@ export default function Home() {
         const fairyRoll = rollD6();
         let destination: number;
 
-        if (fairyRoll <= 2) {
+        // Safely handle fairy rings with different numbers of options
+        const numOptions = landedTile.fairyOptions.length;
+        if (numOptions === 1) {
           destination = landedTile.fairyOptions[0];
-        } else if (fairyRoll <= 4) {
-          destination = landedTile.fairyOptions[1];
+        } else if (numOptions === 2) {
+          destination = fairyRoll <= 3 ? landedTile.fairyOptions[0] : landedTile.fairyOptions[1];
         } else {
-          destination = landedTile.fairyOptions[2];
+          // 3 or more options - distribute evenly
+          if (fairyRoll <= 2) {
+            destination = landedTile.fairyOptions[0];
+          } else if (fairyRoll <= 4) {
+            destination = landedTile.fairyOptions[1];
+          } else {
+            destination = landedTile.fairyOptions[2] || landedTile.fairyOptions[0]; // fallback to first option
+          }
         }
 
         await new Promise(resolve => setTimeout(resolve, 400));
@@ -541,7 +550,7 @@ export default function Home() {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [isEditMode, userRole, editingTile, addNewTile, deleteTile, setIsEditMode, setEditingTile]);
+  }, [isEditMode, userRole, editingTile, connectionMode, addNewTile, deleteTile]);
 
   return (
     <div className="min-h-screen bg-neutral-900 text-neutral-100">
@@ -1101,7 +1110,7 @@ export default function Home() {
                             </button>
 
                             <button
-                              onClick={() => updateTeamPosition(team.id, boardTiles.length)}
+                              onClick={() => updateTeamPosition(team.id, boardData.length)}
                               disabled={isRolling || movingTeam !== null}
                               className={`p-2 text-xs font-mono border transition-all ${isRolling || movingTeam !== null
                                 ? 'border-neutral-700 text-neutral-600 cursor-not-allowed'
@@ -1126,9 +1135,9 @@ export default function Home() {
                   <div className="p-4">
                     <div className="space-y-3">
                       {sortedTeams.map((team, index) => {
-                        const progress = (team.position / boardTiles.length) * 100;
+                        const progress = (team.position / boardData.length) * 100;
                         const isLeading = index === 0;
-                        const currentTile = boardTiles.find(t => t.id === team.position);
+                        const currentTile = boardData.find(t => t.id === team.position);
 
                         return (
                           <div key={team.id} className={`p-3 border ${isLeading ? 'border-yellow-700 bg-yellow-900/10' : 'border-neutral-700 bg-neutral-750'}`}>
@@ -1143,7 +1152,7 @@ export default function Home() {
                               <div className="flex-1">
                                 <div className="text-sm font-medium text-neutral-200">{team.name}</div>
                                 <div className="text-xs text-neutral-400 font-mono">
-                                  {team.position}/{boardTiles.length} • {Math.round(progress)}%
+                                  {team.position}/{boardData.length} • {Math.round(progress)}%
                                 </div>
                               </div>
                               {currentTile?.type && (
